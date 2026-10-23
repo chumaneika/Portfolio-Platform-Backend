@@ -9,7 +9,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.UUID;
 
 
@@ -35,19 +34,10 @@ public class Account {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 32)
-	private AccountStatus status = AccountStatus.ACTIVE;
+	private AccountStatus status;
 
 	@Column(name = "email_verified", nullable = false)
 	private boolean emailVerified;
-
-	@Column(name = "failed_login_attempts", nullable = false)
-	private int failedLoginAttempts;
-
-	@Column(name = "locked_until")
-	private OffsetDateTime lockedUntil;
-
-	@Column(name = "last_login_at")
-	private OffsetDateTime lastLoginAt;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -61,43 +51,8 @@ public class Account {
 		this.email = normalize(email, "email");
 		this.username = normalize(username, "username");
 		this.passwordHash = requireText(passwordHash, "passwordHash");
-	}
-
-	public void changePasswordHash(String passwordHash) {
-		this.passwordHash = requireText(passwordHash, "passwordHash");
-	}
-
-	public void verifyEmail() {
-		this.emailVerified = true;
-		if (status == AccountStatus.PENDING_VERIFICATION) {
-			status = AccountStatus.ACTIVE;
-		}
-	}
-
-	public void registerFailedLogin(int maximumAttempts, OffsetDateTime lockUntil) {
-		if (maximumAttempts < 1) {
-			throw new IllegalArgumentException("maximumAttempts must be positive");
-		}
-
-		failedLoginAttempts++;
-		if (failedLoginAttempts >= maximumAttempts) {
-			status = AccountStatus.LOCKED;
-			lockedUntil = Objects.requireNonNull(lockUntil, "lockUntil must not be null");
-		}
-	}
-
-	public void registerSuccessfulLogin(OffsetDateTime loggedInAt) {
-		lastLoginAt = Objects.requireNonNull(loggedInAt, "loggedInAt must not be null");
-		failedLoginAttempts = 0;
-		lockedUntil = null;
-		if (status == AccountStatus.LOCKED) {
-			status = AccountStatus.ACTIVE;
-		}
-	}
-
-	public void disable() {
-		status = AccountStatus.DISABLED;
-		lockedUntil = null;
+		this.status = AccountStatus.ACTIVE;
+		this.emailVerified = false;
 	}
 
 	private static String normalize(String value, String fieldName) {

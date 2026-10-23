@@ -2,12 +2,16 @@ package com.portfolio.identity_service.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -20,11 +24,9 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.time.Clock;
 import java.util.Base64;
 
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
 
 	@Bean
@@ -45,15 +47,24 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	SecretKey jwtSecretKey(JwtProperties properties) {
+	AuthenticationManager authenticationManager(
+			UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) {
+		var provider = new DaoAuthenticationProvider(userDetailsService);
+		provider.setPasswordEncoder(passwordEncoder);
+		return new ProviderManager(provider);
+	}
+
+	@Bean
+	SecretKey jwtSecretKey(@Value("${security.jwt.secret}") String encodedSecret) {
 		byte[] keyBytes;
 		try {
-			keyBytes = Base64.getDecoder().decode(properties.secret());
+			keyBytes = Base64.getDecoder().decode(encodedSecret);
 		} catch (IllegalArgumentException exception) {
-			throw new IllegalArgumentException("security.jwt.secret must be Base64 encoded", exception);
+			throw new IllegalArgumentException("JWT_SECRET must be Base64 encoded", exception);
 		}
 		if (keyBytes.length < 32) {
-			throw new IllegalArgumentException("security.jwt.secret must contain at least 256 bits");
+			throw new IllegalArgumentException("JWT_SECRET must contain at least 32 bytes");
 		}
 		return new SecretKeySpec(keyBytes, "HmacSHA256");
 	}
@@ -64,16 +75,13 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	JwtDecoder jwtDecoder(SecretKey secretKey, JwtProperties properties) {
+	JwtDecoder jwtDecoder(
+			SecretKey secretKey,
+			@Value("${security.jwt.issuer}") String issuer) {
 		var decoder = NimbusJwtDecoder.withSecretKey(secretKey)
 				.macAlgorithm(MacAlgorithm.HS256)
 				.build();
-		decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.issuer()));
+		decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
 		return decoder;
-	}
-
-	@Bean
-	Clock clock() {
-		return Clock.systemUTC();
 	}
 }

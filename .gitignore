@@ -1,0 +1,37 @@
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local Spring configuration
+**/src/main/resources/application-local.yml
+**/src/main/resources/application-local.yaml
+**/src/main/resources/application-secrets.yml
+**/src/main/resources/application-secrets.yaml
+
+# Private keys and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Build output
+**/target/
+**/build/
+**/out/
+
+# IDE files
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db

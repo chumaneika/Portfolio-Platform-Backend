@@ -5,7 +5,6 @@ import com.portfolio.identity_service.dto.request.RefreshRequest;
 import com.portfolio.identity_service.dto.request.RegisterRequest;
 import com.portfolio.identity_service.dto.response.TokenResponse;
 import com.portfolio.identity_service.services.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,30 +24,24 @@ public class AuthController {
 	}
 
 	@PostMapping("/register")
-	ResponseEntity<TokenResponse> register(
-			@Valid @RequestBody RegisterRequest request,
-			HttpServletRequest servletRequest) {
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(authService.register(request, servletRequest.getHeader("User-Agent"), clientIp(servletRequest)));
+	ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
+		authService.register(request);
+		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
 	@PostMapping("/login")
-	TokenResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
-		return authService.login(request, servletRequest.getHeader("User-Agent"), clientIp(servletRequest));
+	ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
+		return ResponseEntity.ok(authService.login(request));
 	}
 
 	@PostMapping("/refresh")
-	TokenResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest servletRequest) {
-		return authService.refresh(request.refreshToken(), servletRequest.getHeader("User-Agent"), clientIp(servletRequest));
+	ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+		return ResponseEntity.ok(authService.refresh(request.refreshToken()));
 	}
 
 	@PostMapping("/logout")
 	ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
 		authService.logout(request.refreshToken());
 		return ResponseEntity.noContent().build();
-	}
-
-	private static String clientIp(HttpServletRequest request) {
-		return request.getRemoteAddr();
 	}
 }
