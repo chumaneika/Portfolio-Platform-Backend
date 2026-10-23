@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: admin-service
+  datasource:
+    url: ${ADMIN_DB_URL:jdbc:postgresql://localhost:5432/admin_db}
+    username: ${ADMIN_DB_USERNAME:postgres}
+    password: ${ADMIN_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
