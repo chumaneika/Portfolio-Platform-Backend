@@ -17,7 +17,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "accounts")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Account {
+public class AccountEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -47,7 +47,7 @@ public class Account {
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
 
-	public Account(String email, String username, String passwordHash) {
+	public AccountEntity(String email, String username, String passwordHash) {
 		this.email = normalize(email, "email");
 		this.username = normalize(username, "username");
 		this.passwordHash = requireText(passwordHash, "passwordHash");

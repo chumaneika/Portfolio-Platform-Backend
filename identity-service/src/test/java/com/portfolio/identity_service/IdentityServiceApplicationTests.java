@@ -9,14 +9,21 @@ import com.portfolio.identity_service.dto.request.RegisterRequest;
 import com.portfolio.identity_service.entities.AccountStatus;
 import com.portfolio.identity_service.exceptions.ApiException;
 import com.portfolio.identity_service.repositories.AccountRepository;
+import com.portfolio.identity_service.repositories.RefreshTokenRepository;
+import com.portfolio.identity_service.repositories.jpa.AccountJpaRepository;
+import com.portfolio.identity_service.repositories.jpa.RefreshTokenJpaRepository;
+import com.portfolio.identity_service.repositories.springdata.AccountDataRepository;
 import com.portfolio.identity_service.security.AccountUserDetails;
+import com.portfolio.identity_service.security.AccountUserDetailsService;
 import com.portfolio.identity_service.services.AuthService;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -49,10 +57,19 @@ class IdentityServiceApplicationTests {
 	private JdbcClient jdbcClient;
 
 	@Autowired
+	private ApplicationContext applicationContext;
+
+	@Autowired
 	private AuthService authService;
 
 	@Autowired
+	private AccountDataRepository accountDataRepository;
+
+	@Autowired
 	private AccountRepository accountRepository;
+
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -84,6 +101,14 @@ class IdentityServiceApplicationTests {
 	void contextLoads() {
 		assertThat(restClientBuilder).isNotNull();
 		assertThat(webClientBuilder).isNotNull();
+		assertThat(AopUtils.getTargetClass(accountRepository)).isEqualTo(AccountJpaRepository.class);
+		assertThat(AopUtils.getTargetClass(refreshTokenRepository)).isEqualTo(RefreshTokenJpaRepository.class);
+		var qualifier = AccountUserDetailsService.class.getDeclaredConstructors()[0]
+				.getParameters()[0].getAnnotation(Qualifier.class);
+		assertThat(qualifier).isNotNull();
+		assertThat(qualifier.value()).isEqualTo("accountDataRepository");
+		assertThat(ReflectionTestUtils.getField(userDetailsService, "accountRepository"))
+				.isSameAs(applicationContext.getBean("accountDataRepository"));
 	}
 
 	@Test
@@ -112,7 +137,7 @@ class IdentityServiceApplicationTests {
 				"strong-password"));
 
 		var userDetails = userDetailsService.loadUserByUsername("USER@EXAMPLE.COM");
-		var account = accountRepository.findByEmail("user@example.com").orElseThrow();
+		var account = accountDataRepository.findByEmail("user@example.com").orElseThrow();
 		assertThat(account.getUsername()).isEqualTo("testuser");
 		assertThat(account.getStatus()).isEqualTo(AccountStatus.ACTIVE);
 		assertThat(account.isEmailVerified()).isFalse();

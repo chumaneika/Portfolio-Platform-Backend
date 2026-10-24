@@ -21,7 +21,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "refresh_tokens")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RefreshToken {
+public class RefreshTokenEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -29,7 +29,7 @@ public class RefreshToken {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "account_id", nullable = false)
-	private Account account;
+	private AccountEntity accountEntity;
 
 	@Column(name = "token_hash", nullable = false, unique = true, length = 128)
 	private String tokenHash;
@@ -44,8 +44,8 @@ public class RefreshToken {
 	@Column(name = "revoked_at")
 	private OffsetDateTime revokedAt;
 
-	public RefreshToken(Account account, String tokenHash, OffsetDateTime expiresAt) {
-		this.account = account;
+	public RefreshTokenEntity(AccountEntity accountEntity, String tokenHash, OffsetDateTime expiresAt) {
+		this.accountEntity = accountEntity;
 		this.tokenHash = tokenHash;
 		this.expiresAt = expiresAt;
 	}

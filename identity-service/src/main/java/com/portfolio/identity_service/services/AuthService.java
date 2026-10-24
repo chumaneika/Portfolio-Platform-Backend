@@ -3,13 +3,17 @@ package com.portfolio.identity_service.services;
 import com.portfolio.identity_service.dto.request.LoginRequest;
 import com.portfolio.identity_service.dto.request.RegisterRequest;
 import com.portfolio.identity_service.dto.response.TokenResponse;
-import com.portfolio.identity_service.entities.Account;
+import com.portfolio.identity_service.entities.AccountEntity;
 import com.portfolio.identity_service.entities.AccountStatus;
-import com.portfolio.identity_service.entities.RefreshToken;
+import com.portfolio.identity_service.entities.RefreshTokenEntity;
 import com.portfolio.identity_service.exceptions.ApiException;
 import com.portfolio.identity_service.repositories.AccountRepository;
 import com.portfolio.identity_service.repositories.RefreshTokenRepository;
+import com.portfolio.identity_service.repositories.springdata.AccountDataRepository;
+import com.portfolio.identity_service.repositories.springdata.RefreshTokenDataRepository;
 import com.portfolio.identity_service.security.AccountUserDetails;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -39,37 +43,26 @@ import java.util.Locale;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+	@Qualifier("accountJpaRepository")
 	private final AccountRepository accountRepository;
+	private final AccountDataRepository accountDataRepository;
+	@Qualifier("refreshTokenJpaRepository")
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final RefreshTokenDataRepository refreshTokenDataRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final AuthenticationManager authenticationManager;
 	private final JwtEncoder jwtEncoder;
+	@Value("${security.jwt.issuer}")
 	private final String jwtIssuer;
+	@Value("${security.jwt.access-token-ttl}")
 	private final Duration accessTokenTtl;
+	@Value("${security.jwt.refresh-token-ttl}")
 	private final Duration refreshTokenTtl;
-
-	public AuthService(
-			AccountRepository accountRepository,
-			RefreshTokenRepository refreshTokenRepository,
-			PasswordEncoder passwordEncoder,
-			AuthenticationManager authenticationManager,
-			JwtEncoder jwtEncoder,
-			@Value("${security.jwt.issuer}") String jwtIssuer,
-			@Value("${security.jwt.access-token-ttl}") Duration accessTokenTtl,
-			@Value("${security.jwt.refresh-token-ttl}") Duration refreshTokenTtl) {
-		this.accountRepository = accountRepository;
-		this.refreshTokenRepository = refreshTokenRepository;
-		this.passwordEncoder = passwordEncoder;
-		this.authenticationManager = authenticationManager;
-		this.jwtEncoder = jwtEncoder;
-		this.jwtIssuer = jwtIssuer;
-		this.accessTokenTtl = accessTokenTtl;
-		this.refreshTokenTtl = refreshTokenTtl;
-	}
 
 	@Transactional
 	public void register(RegisterRequest request) {
@@ -85,8 +78,8 @@ public class AuthService {
 		}
 
 		try {
-			accountRepository.saveAndFlush(
-					new Account(email, username, passwordEncoder.encode(request.password())));
+			accountDataRepository.saveAndFlush(
+					new AccountEntity(email, username, passwordEncoder.encode(request.password())));
 		} catch (DataIntegrityViolationException exception) {
 			throw conflict("Email or username is already in use");
 		}
@@ -99,7 +92,7 @@ public class AuthService {
 			var authentication = authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(email, request.password()));
 			var user = (AccountUserDetails) authentication.getPrincipal();
-			var account = accountRepository.getReferenceById(user.getAccountId());
+			var account = accountDataRepository.getReferenceById(user.getAccountId());
 			return issueTokens(account);
 		} catch (AuthenticationException exception) {
 			throw authenticationFailed("Invalid login or password");
@@ -114,12 +107,12 @@ public class AuthService {
 		var now = OffsetDateTime.now(ZoneOffset.UTC);
 
 		if (!storedToken.isActiveAt(now)
-				|| storedToken.getAccount().getStatus() != AccountStatus.ACTIVE) {
+				|| storedToken.getAccountEntity().getStatus() != AccountStatus.ACTIVE) {
 			throw authenticationFailed("Invalid refresh token");
 		}
 
 		storedToken.revoke(now);
-		return issueTokens(storedToken.getAccount());
+		return issueTokens(storedToken.getAccountEntity());
 	}
 
 	@Transactional
@@ -130,23 +123,23 @@ public class AuthService {
 				.ifPresent(token -> token.revoke(OffsetDateTime.now(ZoneOffset.UTC)));
 	}
 
-	private TokenResponse issueTokens(Account account) {
+	private TokenResponse issueTokens(AccountEntity accountEntity) {
 		var issuedAt = Instant.now();
 		var claims = JwtClaimsSet.builder()
 				.issuer(jwtIssuer)
 				.id(UUID.randomUUID().toString())
-				.subject(account.getId().toString())
+				.subject(accountEntity.getId().toString())
 				.issuedAt(issuedAt)
 				.expiresAt(issuedAt.plus(accessTokenTtl))
-				.claim("email", account.getEmail())
+				.claim("email", accountEntity.getEmail())
 				.build();
 		var header = JwsHeader.with(MacAlgorithm.HS256).type("JWT").build();
 		var accessToken = jwtEncoder
 				.encode(JwtEncoderParameters.from(header, claims))
 				.getTokenValue();
 		var rawRefreshToken = createRefreshToken();
-		refreshTokenRepository.save(new RefreshToken(
-				account,
+		refreshTokenDataRepository.save(new RefreshTokenEntity(
+				accountEntity,
 				hashRefreshToken(rawRefreshToken),
 				OffsetDateTime.now(ZoneOffset.UTC).plus(refreshTokenTtl)));
 

@@ -1,6 +1,6 @@
 package com.portfolio.identity_service.security;
 
-import com.portfolio.identity_service.entities.Account;
+import com.portfolio.identity_service.entities.AccountEntity;
 import com.portfolio.identity_service.entities.AccountStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,11 +17,11 @@ public class AccountUserDetails implements UserDetails {
 	private final String password;
 	private final boolean enabled;
 
-	public AccountUserDetails(Account account) {
-		this.accountId = account.getId();
-		this.email = account.getEmail();
-		this.password = account.getPasswordHash();
-		this.enabled = account.getStatus() == AccountStatus.ACTIVE;
+	public AccountUserDetails(AccountEntity accountEntity) {
+		this.accountId = accountEntity.getId();
+		this.email = accountEntity.getEmail();
+		this.password = accountEntity.getPasswordHash();
+		this.enabled = accountEntity.getStatus() == AccountStatus.ACTIVE;
 	}
 
 	public UUID getAccountId() {

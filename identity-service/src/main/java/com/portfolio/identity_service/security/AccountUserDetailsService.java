@@ -2,6 +2,7 @@ package com.portfolio.identity_service.security;
 
 import com.portfolio.identity_service.repositories.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -13,6 +14,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class AccountUserDetailsService implements UserDetailsService {
 
+	@Qualifier("accountDataRepository")
 	private final AccountRepository accountRepository;
 
 	@Override
