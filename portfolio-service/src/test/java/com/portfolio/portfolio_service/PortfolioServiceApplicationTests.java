@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.portfolio.portfolio_service.controllers.ApiExceptionHandler;
+import com.portfolio.portfolio_service.controllers.handlers.ApiExceptionHandler;
 import com.portfolio.portfolio_service.exceptions.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

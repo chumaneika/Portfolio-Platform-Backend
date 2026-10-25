@@ -1,7 +1,10 @@
-package com.portfolio.portfolio_service.controllers;
+package com.portfolio.portfolio_service.controllers.handlers;
 
 import com.portfolio.portfolio_service.dto.ApiError;
 import com.portfolio.portfolio_service.exceptions.ApiException;
+import com.portfolio.portfolio_service.services.exceptions.PortfolioServiceException;
+import com.portfolio.portfolio_service.services.exceptions.ProjectServiceException;
+import com.portfolio.portfolio_service.services.exceptions.ProjectTechnologyServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,86 @@ import java.util.Map;
 public class ApiExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+	@ExceptionHandler(ProjectTechnologyServiceException.class)
+	public ResponseEntity<ApiError> handleProjectTechnologyServiceException(
+			ProjectTechnologyServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PORTFOLIO_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND, "portfolio_not_found", exception.getMessage(), request, Map.of());
+			case PROJECT_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND, "project_not_found", exception.getMessage(), request, Map.of());
+			case TECHNOLOGY_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND, "project_technology_not_found", exception.getMessage(), request, Map.of());
+			case TECHNOLOGY_ALREADY_EXISTS -> response(
+					HttpStatus.CONFLICT, "project_technology_already_exists", exception.getMessage(), request, Map.of());
+		};
+	}
+
+	@ExceptionHandler(ProjectServiceException.class)
+	public ResponseEntity<ApiError> handleProjectServiceException(
+			ProjectServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PORTFOLIO_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"portfolio_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case PROJECT_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"project_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case SLUG_ALREADY_EXISTS -> response(
+					HttpStatus.CONFLICT,
+					"project_slug_already_exists",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_TIMELINE -> response(
+					HttpStatus.BAD_REQUEST,
+					"invalid_project_timeline",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
+
+	@ExceptionHandler(PortfolioServiceException.class)
+	public ResponseEntity<ApiError> handlePortfolioServiceException(
+			PortfolioServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PORTFOLIO_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"portfolio_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case SLUG_ALREADY_EXISTS -> response(
+					HttpStatus.CONFLICT,
+					"portfolio_slug_already_exists",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_SLUG -> response(
+					HttpStatus.BAD_REQUEST,
+					"invalid_portfolio_slug",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_STATUS_TRANSITION -> response(
+					HttpStatus.CONFLICT,
+					"invalid_portfolio_status_transition",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
 
 	@ExceptionHandler(ApiException.class)
 	public ResponseEntity<ApiError> handleApiException(

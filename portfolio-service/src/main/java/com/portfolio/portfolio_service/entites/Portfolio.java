@@ -80,10 +80,12 @@ public class Portfolio {
 
 	public void moveToDraft() {
 		this.status = PortfolioStatus.DRAFT;
+		this.publishedAt = null;
 	}
 
 	public void archive() {
 		this.status = PortfolioStatus.ARCHIVED;
+		this.publishedAt = null;
 	}
 
 	private static String normalizeCode(String value, String fieldName) {
