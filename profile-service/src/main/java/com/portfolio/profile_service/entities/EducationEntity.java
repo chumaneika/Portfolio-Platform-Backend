@@ -10,8 +10,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,9 +23,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "work_experiences")
+@Table(name = "educations")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class WorkExperience {
+public class EducationEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -35,32 +33,28 @@ public class WorkExperience {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "profile_id", nullable = false)
-	private Profile profile;
+	private ProfileEntity profileEntity;
 
-	@Column(name = "company_name", nullable = false, length = 150)
-	private String companyName;
+	@Column(name = "institution_name", nullable = false, length = 200)
+	private String institutionName;
 
-	@Column(name = "position_title", nullable = false, length = 150)
-	private String positionTitle;
+	@Column(length = 150)
+	private String degree;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "employment_type", length = 30)
-	private EmploymentType employmentType;
-
-	@Column(length = 200)
-	private String location;
+	@Column(name = "field_of_study", length = 150)
+	private String fieldOfStudy;
 
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
-	@Column(name = "started_on", nullable = false)
+	@Column(name = "started_on")
 	private LocalDate startedOn;
 
 	@Column(name = "ended_on")
 	private LocalDate endedOn;
 
-	@Column(name = "current_position", nullable = false)
-	private boolean currentPosition;
+	@Column(name = "current_education", nullable = false)
+	private boolean currentEducation;
 
 	@Column(name = "display_order", nullable = false)
 	private int displayOrder;
@@ -73,45 +67,33 @@ public class WorkExperience {
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
 
-	public WorkExperience(
-			Profile profile,
-			String companyName,
-			String positionTitle,
-			EmploymentType employmentType,
-			LocalDate startedOn,
-			int displayOrder) {
-		this.profile = Objects.requireNonNull(profile, "profile must not be null");
-		this.companyName = requireText(companyName, "companyName");
-		this.positionTitle = requireText(positionTitle, "positionTitle");
-		this.employmentType = employmentType;
-		this.startedOn = Objects.requireNonNull(startedOn, "startedOn must not be null");
+	public EducationEntity(ProfileEntity profileEntity, String institutionName, int displayOrder) {
+		this.profileEntity = Objects.requireNonNull(profileEntity, "profile must not be null");
+		this.institutionName = requireText(institutionName, "institutionName");
 		this.displayOrder = requireNonNegative(displayOrder, "displayOrder");
 	}
 
 	public void updateDetails(
-			String companyName,
-			String positionTitle,
-			EmploymentType employmentType,
-			String location,
+			String institutionName,
+			String degree,
+			String fieldOfStudy,
 			String description) {
-		this.companyName = requireText(companyName, "companyName");
-		this.positionTitle = requireText(positionTitle, "positionTitle");
-		this.employmentType = employmentType;
-		this.location = trimToNull(location);
+		this.institutionName = requireText(institutionName, "institutionName");
+		this.degree = trimToNull(degree);
+		this.fieldOfStudy = trimToNull(fieldOfStudy);
 		this.description = trimToNull(description);
 	}
 
-	public void setPeriod(LocalDate startedOn, LocalDate endedOn, boolean currentPosition) {
-		var start = Objects.requireNonNull(startedOn, "startedOn must not be null");
-		if (currentPosition && endedOn != null) {
-			throw new IllegalArgumentException("A current position cannot have an end date");
+	public void setPeriod(LocalDate startedOn, LocalDate endedOn, boolean currentEducation) {
+		if (currentEducation && endedOn != null) {
+			throw new IllegalArgumentException("Current education cannot have an end date");
 		}
-		if (endedOn != null && endedOn.isBefore(start)) {
+		if (startedOn != null && endedOn != null && endedOn.isBefore(startedOn)) {
 			throw new IllegalArgumentException("endedOn must not be before startedOn");
 		}
-		this.startedOn = start;
+		this.startedOn = startedOn;
 		this.endedOn = endedOn;
-		this.currentPosition = currentPosition;
+		this.currentEducation = currentEducation;
 	}
 
 	public void changeDisplayOrder(int displayOrder) {

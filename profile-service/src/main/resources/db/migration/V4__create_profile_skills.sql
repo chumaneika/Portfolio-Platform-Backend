@@ -3,7 +3,6 @@ CREATE TABLE profile_skills (
     skill_code VARCHAR(50) NOT NULL,
     display_name VARCHAR(100) NOT NULL,
     category VARCHAR(50),
-    proficiency_level INTEGER,
     display_order INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT pk_profile_skills PRIMARY KEY (profile_id, skill_code),
@@ -11,9 +10,6 @@ CREATE TABLE profile_skills (
         FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE CASCADE,
     CONSTRAINT ck_profile_skills_code_normalized CHECK (
         skill_code = LOWER(TRIM(skill_code))
-    ),
-    CONSTRAINT ck_profile_skills_proficiency CHECK (
-        proficiency_level IS NULL OR proficiency_level BETWEEN 1 AND 5
     ),
     CONSTRAINT ck_profile_skills_display_order CHECK (display_order >= 0)
 );

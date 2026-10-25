@@ -4,8 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.portfolio.profile_service.controllers.ApiExceptionHandler;
+import com.portfolio.profile_service.controllers.handlers.ApiExceptionHandler;
 import com.portfolio.profile_service.exceptions.ApiException;
+import com.portfolio.profile_service.services.exceptions.ProfileServiceException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ import java.time.Instant;
 		"spring.jpa.hibernate.ddl-auto=validate",
 		"security.jwt.secret=cG9ydGZvbGlvLWlkZW50aXR5LXNlcnZpY2UtdGVzdC1zZWNyZXQ="
 })
-class ProfileServiceApplicationTests {
+class ProfileEntityServiceApplicationTests {
 
 	@Autowired
 	private JdbcClient jdbcClient;
@@ -76,6 +77,20 @@ class ProfileServiceApplicationTests {
 				"profile_skills",
 				"profiles",
 				"work_experiences");
+
+		var skillColumns = jdbcClient.sql("""
+				SELECT column_name
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+					AND table_name = 'profile_skills'
+				ORDER BY ordinal_position
+				""")
+				.query(String.class)
+				.list();
+
+		assertThat(skillColumns)
+				.containsExactly("profile_id", "skill_code", "display_name", "category", "display_order")
+				.doesNotContain("proficiency_level");
 	}
 
 	@Test
@@ -90,6 +105,23 @@ class ProfileServiceApplicationTests {
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().code()).isEqualTo("profile_not_found");
 		assertThat(response.getBody().path()).isEqualTo("/api/v1/profiles/missing");
+	}
+
+	@Test
+	@DisplayName("Service errors are mapped to the API error contract by the controller layer")
+	void serviceErrorMapping() {
+		var request = new MockHttpServletRequest("POST", "/api/v1/profile/me");
+
+		var response = apiExceptionHandler.handleProfileServiceException(
+				new ProfileServiceException(
+						ProfileServiceException.Reason.PROFILE_ALREADY_EXISTS,
+						"A profile for this account already exists"),
+				request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().code()).isEqualTo("profile_already_exists");
+		assertThat(response.getBody().path()).isEqualTo("/api/v1/profile/me");
 	}
 
 	@Test

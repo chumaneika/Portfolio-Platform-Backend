@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "profiles")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Profile {
+public class ProfileEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -62,7 +62,7 @@ public class Profile {
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
 
-	public Profile(UUID accountId, String firstName, String lastName) {
+	public ProfileEntity(UUID accountId, String firstName, String lastName) {
 		this.accountId = Objects.requireNonNull(accountId, "accountId must not be null");
 		this.firstName = requireText(firstName, "firstName");
 		this.lastName = requireText(lastName, "lastName");

@@ -1,7 +1,12 @@
-package com.portfolio.profile_service.controllers;
+package com.portfolio.profile_service.controllers.handlers;
 
 import com.portfolio.profile_service.dto.ApiError;
 import com.portfolio.profile_service.exceptions.ApiException;
+import com.portfolio.profile_service.services.exceptions.EducationServiceException;
+import com.portfolio.profile_service.services.exceptions.ProfileLinkServiceException;
+import com.portfolio.profile_service.services.exceptions.ProfileServiceException;
+import com.portfolio.profile_service.services.exceptions.ProfileSkillServiceException;
+import com.portfolio.profile_service.services.exceptions.WorkExperienceServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +32,32 @@ public class ApiExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+	@ExceptionHandler(ProfileLinkServiceException.class)
+	public ResponseEntity<ApiError> handleProfileLinkServiceException(
+			ProfileLinkServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PROFILE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case LINK_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_link_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_URL -> response(
+					HttpStatus.BAD_REQUEST,
+					"invalid_profile_link_url",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
+
 	@ExceptionHandler(ApiException.class)
 	public ResponseEntity<ApiError> handleApiException(
 			ApiException exception,
@@ -37,6 +68,104 @@ public class ApiExceptionHandler {
 				exception.getMessage(),
 				request,
 				Map.of());
+	}
+
+	@ExceptionHandler(ProfileSkillServiceException.class)
+	public ResponseEntity<ApiError> handleProfileSkillServiceException(
+			ProfileSkillServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PROFILE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case SKILL_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_skill_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case SKILL_ALREADY_EXISTS -> response(
+					HttpStatus.CONFLICT,
+					"profile_skill_already_exists",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
+
+	@ExceptionHandler(EducationServiceException.class)
+	public ResponseEntity<ApiError> handleEducationServiceException(
+			EducationServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PROFILE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case EDUCATION_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"education_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_PERIOD -> response(
+					HttpStatus.BAD_REQUEST,
+					"invalid_education_period",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
+
+	@ExceptionHandler(WorkExperienceServiceException.class)
+	public ResponseEntity<ApiError> handleWorkExperienceServiceException(
+			WorkExperienceServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PROFILE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case WORK_EXPERIENCE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"work_experience_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case INVALID_PERIOD -> response(
+					HttpStatus.BAD_REQUEST,
+					"invalid_work_experience_period",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
+	}
+
+	@ExceptionHandler(ProfileServiceException.class)
+	public ResponseEntity<ApiError> handleProfileServiceException(
+			ProfileServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case PROFILE_ALREADY_EXISTS -> response(
+					HttpStatus.CONFLICT,
+					"profile_already_exists",
+					exception.getMessage(),
+					request,
+					Map.of());
+			case PROFILE_NOT_FOUND -> response(
+					HttpStatus.NOT_FOUND,
+					"profile_not_found",
+					exception.getMessage(),
+					request,
+					Map.of());
+		};
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

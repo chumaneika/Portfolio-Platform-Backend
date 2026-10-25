@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "profile_links")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProfileLink {
+public class ProfileLinkEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -29,7 +29,7 @@ public class ProfileLink {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "profile_id", nullable = false)
-	private Profile profile;
+	private ProfileEntity profileEntity;
 
 	@Column(nullable = false, length = 50)
 	private String platform;
@@ -43,8 +43,8 @@ public class ProfileLink {
 	@Column(name = "display_order", nullable = false)
 	private int displayOrder;
 
-	public ProfileLink(Profile profile, String platform, String label, String url, int displayOrder) {
-		this.profile = Objects.requireNonNull(profile, "profile must not be null");
+	public ProfileLinkEntity(ProfileEntity profileEntity, String platform, String label, String url, int displayOrder) {
+		this.profileEntity = Objects.requireNonNull(profileEntity, "profile must not be null");
 		this.platform = normalizePlatform(platform);
 		this.label = trimToNull(label);
 		this.url = requireText(url, "url");

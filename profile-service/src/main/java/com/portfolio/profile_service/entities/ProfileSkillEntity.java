@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "profile_skills")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProfileSkill {
+public class ProfileSkillEntity {
 
 	@EmbeddedId
 	private ProfileSkillId id;
@@ -27,7 +27,7 @@ public class ProfileSkill {
 	@MapsId("profileId")
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "profile_id", nullable = false)
-	private Profile profile;
+	private ProfileEntity profileEntity;
 
 	@Column(name = "display_name", nullable = false, length = 100)
 	private String displayName;
@@ -35,24 +35,19 @@ public class ProfileSkill {
 	@Column(length = 50)
 	private String category;
 
-	@Column(name = "proficiency_level")
-	private Integer proficiencyLevel;
-
 	@Column(name = "display_order", nullable = false)
 	private int displayOrder;
 
-	public ProfileSkill(
-			Profile profile,
+	public ProfileSkillEntity(
+			ProfileEntity profileEntity,
 			String skillCode,
 			String displayName,
 			String category,
-			Integer proficiencyLevel,
 			int displayOrder) {
-		this.profile = Objects.requireNonNull(profile, "profile must not be null");
+		this.profileEntity = Objects.requireNonNull(profileEntity, "profile must not be null");
 		this.id = new ProfileSkillId(null, normalizeCode(skillCode));
 		this.displayName = requireText(displayName, "displayName");
 		this.category = trimToNull(category);
-		this.proficiencyLevel = requireProficiencyLevel(proficiencyLevel);
 		this.displayOrder = requireNonNegative(displayOrder, "displayOrder");
 	}
 
@@ -63,19 +58,10 @@ public class ProfileSkill {
 	public void updatePresentation(
 			String displayName,
 			String category,
-			Integer proficiencyLevel,
 			int displayOrder) {
 		this.displayName = requireText(displayName, "displayName");
 		this.category = trimToNull(category);
-		this.proficiencyLevel = requireProficiencyLevel(proficiencyLevel);
 		this.displayOrder = requireNonNegative(displayOrder, "displayOrder");
-	}
-
-	private static Integer requireProficiencyLevel(Integer value) {
-		if (value != null && (value < 1 || value > 5)) {
-			throw new IllegalArgumentException("proficiencyLevel must be between 1 and 5");
-		}
-		return value;
 	}
 
 	private static String normalizeCode(String value) {
