@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.time.OffsetDateTime;
 
 @Repository
 @Primary
@@ -34,5 +36,18 @@ public class RefreshTokenJpaRepository implements RefreshTokenRepository {
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultStream()
                 .findFirst();
+    }
+
+    @Override
+    public void revokeAllForAccount(UUID accountId, OffsetDateTime revokedAt) {
+        entityManager.createQuery("""
+                        update RefreshTokenEntity token
+                        set token.revokedAt = :revokedAt
+                        where token.accountEntity.id = :accountId
+                          and token.revokedAt is null
+                        """)
+                .setParameter("accountId", accountId)
+                .setParameter("revokedAt", revokedAt)
+                .executeUpdate();
     }
 }

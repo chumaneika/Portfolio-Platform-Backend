@@ -1,5 +1,6 @@
 package com.portfolio.identity_service.repositories.jpa;
 
+import com.portfolio.identity_service.dto.response.AccountSummaryResponse;
 import com.portfolio.identity_service.entities.AccountEntity;
 import com.portfolio.identity_service.repositories.AccountRepository;
 import jakarta.persistence.EntityManager;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Primary
@@ -16,6 +18,27 @@ import java.util.Optional;
 public class AccountJpaRepository implements AccountRepository {
 
     private final EntityManager entityManager;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AccountSummaryResponse> findAccount(UUID accountId) {
+        return entityManager.createQuery(
+                """
+                       select new com.portfolio.identity_service.dto.response.AccountSummaryResponse(
+                           a.id, a.email, a.username, a.status
+                       )
+                       from AccountEntity a
+                       where a.id = :accountId
+                   """, AccountSummaryResponse.class)
+                .setParameter("accountId", accountId)
+                .getResultStream()
+                .findFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AccountEntity> findById(UUID accountId) {
+        return Optional.ofNullable(entityManager.find(AccountEntity.class, accountId));
+    }
 
     @Transactional(readOnly = true)
     public Optional<AccountEntity> findByEmail(String email) {
@@ -52,5 +75,10 @@ public class AccountJpaRepository implements AccountRepository {
                       """, Long.class)
                 .setParameter("username", username)
                 .getSingleResult() > 0;
+    }
+
+    @Override
+    public void flush() {
+        entityManager.flush();
     }
 }

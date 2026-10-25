@@ -55,6 +55,14 @@ public class AccountEntity {
 		this.emailVerified = false;
 	}
 
+	public void changePasswordHash(String passwordHash) {
+		this.passwordHash = requireText(passwordHash, "passwordHash");
+	}
+
+	public void changeUsername(String username) {
+		this.username = normalize(username, "username");
+	}
+
 	private static String normalize(String value, String fieldName) {
 		return requireText(value, fieldName).toLowerCase(Locale.ROOT);
 	}

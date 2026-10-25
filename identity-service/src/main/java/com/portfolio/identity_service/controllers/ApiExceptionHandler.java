@@ -2,6 +2,7 @@ package com.portfolio.identity_service.controllers;
 
 import com.portfolio.identity_service.dto.ApiError;
 import com.portfolio.identity_service.exceptions.ApiException;
+import com.portfolio.identity_service.services.exceptions.AccountServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,26 @@ import java.util.Map;
 public class ApiExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+	@ExceptionHandler(AccountServiceException.class)
+	public ResponseEntity<ApiError> handleAccountServiceException(
+			AccountServiceException exception,
+			HttpServletRequest request) {
+		return switch (exception.getReason()) {
+			case ACCOUNT_NOT_FOUND -> response(HttpStatus.NOT_FOUND,
+					"account_not_found", exception.getMessage(), request, Map.of());
+			case ACCOUNT_INACTIVE -> response(HttpStatus.FORBIDDEN,
+					"account_inactive", exception.getMessage(), request, Map.of());
+			case INVALID_CURRENT_PASSWORD -> response(HttpStatus.BAD_REQUEST,
+					"invalid_current_password", exception.getMessage(), request, Map.of());
+			case PASSWORD_UNCHANGED -> response(HttpStatus.BAD_REQUEST,
+					"password_unchanged", exception.getMessage(), request, Map.of());
+			case PASSWORD_TOO_LONG -> response(HttpStatus.BAD_REQUEST,
+					"invalid_password", exception.getMessage(), request, Map.of());
+			case USERNAME_ALREADY_EXISTS -> response(HttpStatus.CONFLICT,
+					"username_already_exists", exception.getMessage(), request, Map.of());
+		};
+	}
 
 	@ExceptionHandler(ApiException.class)
 	public ResponseEntity<ApiError> handleApiException(
