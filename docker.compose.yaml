@@ -1,0 +1,184 @@
+name: portfolio-platform
+
+x-postgres-common: &postgres-common
+  image: postgres:${POSTGRES_VERSION:-17-alpine}
+  restart: unless-stopped
+  networks:
+    - portfolio-network
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+    start_period: 10s
+
+x-app-common: &app-common
+  restart: unless-stopped
+  networks:
+    - portfolio-network
+
+services:
+  identity-db:
+    <<: *postgres-common
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: ${IDENTITY_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:-postgres}
+    ports:
+      - "${IDENTITY_DB_PORT:-15432}:5432"
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+
+  portfolio-db:
+    <<: *postgres-common
+    environment:
+      POSTGRES_DB: portfolio_db
+      POSTGRES_USER: ${PORTFOLIO_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${PORTFOLIO_DB_PASSWORD:-postgres}
+    ports:
+      - "${PORTFOLIO_DB_PORT:-15433}:5432"
+    volumes:
+      - portfolio-db-data:/var/lib/postgresql/data
+
+  profile-db:
+    <<: *postgres-common
+    environment:
+      POSTGRES_DB: profile_db
+      POSTGRES_USER: ${PROFILE_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${PROFILE_DB_PASSWORD:-postgres}
+    ports:
+      - "${PROFILE_DB_PORT:-15434}:5432"
+    volumes:
+      - profile-db-data:/var/lib/postgresql/data
+
+  admin-db:
+    <<: *postgres-common
+    environment:
+      POSTGRES_DB: admin_db
+      POSTGRES_USER: ${ADMIN_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${ADMIN_DB_PASSWORD:-postgres}
+    ports:
+      - "${ADMIN_DB_PORT:-15435}:5432"
+    volumes:
+      - admin-db-data:/var/lib/postgresql/data
+
+  discovery-service:
+    <<: *app-common
+    build:
+      context: ./discovery-service
+      dockerfile: Dockerfile
+    environment:
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+    ports:
+      - "${DISCOVERY_PORT:-8761}:8761"
+
+  identity-service:
+    <<: *app-common
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    environment:
+      IDENTITY_DB_URL: jdbc:postgresql://identity-db:5432/identity_db
+      IDENTITY_DB_USERNAME: ${IDENTITY_DB_USERNAME:-postgres}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-postgres}
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+      JWT_ISSUER: http://identity-service:8081
+      JWT_SECRET: ${JWT_SECRET:-cG9ydGZvbGlvLXBsYXRmb3JtLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-15m}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-30d}
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+    ports:
+      - "${IDENTITY_SERVICE_PORT:-8081}:8081"
+
+  portfolio-service:
+    <<: *app-common
+    build:
+      context: ./portfolio-service
+      dockerfile: Dockerfile
+    environment:
+      PORTFOLIO_DB_URL: jdbc:postgresql://portfolio-db:5432/portfolio_db
+      PORTFOLIO_DB_USERNAME: ${PORTFOLIO_DB_USERNAME:-postgres}
+      PORTFOLIO_DB_PASSWORD: ${PORTFOLIO_DB_PASSWORD:-postgres}
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+      JWT_ISSUER: http://identity-service:8081
+      JWT_SECRET: ${JWT_SECRET:-cG9ydGZvbGlvLXBsYXRmb3JtLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+    depends_on:
+      portfolio-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+    ports:
+      - "${PORTFOLIO_SERVICE_PORT:-8082}:8082"
+
+  profile-service:
+    <<: *app-common
+    build:
+      context: ./profile-service
+      dockerfile: Dockerfile
+    environment:
+      PROFILE_DB_URL: jdbc:postgresql://profile-db:5432/profile_db
+      PROFILE_DB_USERNAME: ${PROFILE_DB_USERNAME:-postgres}
+      PROFILE_DB_PASSWORD: ${PROFILE_DB_PASSWORD:-postgres}
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+      JWT_ISSUER: http://identity-service:8081
+      JWT_SECRET: ${JWT_SECRET:-cG9ydGZvbGlvLXBsYXRmb3JtLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+    depends_on:
+      profile-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+    ports:
+      - "${PROFILE_SERVICE_PORT:-8083}:8083"
+
+  admin-service:
+    <<: *app-common
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    environment:
+      ADMIN_DB_URL: jdbc:postgresql://admin-db:5432/admin_db
+      ADMIN_DB_USERNAME: ${ADMIN_DB_USERNAME:-postgres}
+      ADMIN_DB_PASSWORD: ${ADMIN_DB_PASSWORD:-postgres}
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+    depends_on:
+      admin-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+    ports:
+      - "${ADMIN_SERVICE_PORT:-8084}:8084"
+
+  api-gateway-service:
+    <<: *app-common
+    build:
+      context: ./api-gateway-service
+      dockerfile: Dockerfile
+    environment:
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+    depends_on:
+      discovery-service:
+        condition: service_started
+      identity-service:
+        condition: service_started
+      portfolio-service:
+        condition: service_started
+      profile-service:
+        condition: service_started
+      admin-service:
+        condition: service_started
+    ports:
+      - "${API_GATEWAY_PORT:-8080}:8080"
+
+networks:
+  portfolio-network:
+    driver: bridge
+
+volumes:
+  identity-db-data:
+  portfolio-db-data:
+  profile-db-data:
+  admin-db-data:

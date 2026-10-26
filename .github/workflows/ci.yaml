@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test all services
+        run: |
+          set -e
+
+          for service in \
+            admin-service \
+            api-gateway-service \
+            discovery-service \
+            identity-service \
+            portfolio-service \
+            profile-service
+          do
+            echo "Testing $service"
+            (cd "$service" && ./mvnw --batch-mode clean verify)
+          done
+
+      - name: Build all Docker images
+        run: |
+          set -e
+
+          for service in \
+            admin-service \
+            api-gateway-service \
+            discovery-service \
+            identity-service \
+            portfolio-service \
+            profile-service
+          do
+            echo "Building $service image"
+            docker build --tag "$service:ci" "$service"
+          done
