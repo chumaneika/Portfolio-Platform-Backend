@@ -79,12 +79,24 @@ class PublicProfileControllerIntegrationTests extends ControllerIntegrationTestS
 				.andExpect(jsonPath("$.educations[0].institutionName").value("University"))
 				.andExpect(jsonPath("$.skills[0].skillCode").value("java"))
 				.andExpect(jsonPath("$.links[0].platform").value("github"));
+
+		mockMvc.perform(get("/api/v1/profiles/by-account/{accountId}", accountId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.profile.id").value(profileId))
+				.andExpect(jsonPath("$.workExperiences[0].companyName").value("Company"))
+				.andExpect(jsonPath("$.educations[0].institutionName").value("University"))
+				.andExpect(jsonPath("$.skills[0].skillCode").value("java"))
+				.andExpect(jsonPath("$.links[0].platform").value("github"));
 	}
 
 	@Test
 	@DisplayName("Public profile returns the API error contract for an unknown id")
 	void reportsMissingPublicProfile() throws Exception {
 		mockMvc.perform(get("/api/v1/profiles/{profileId}", UUID.randomUUID()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("profile_not_found"));
+
+		mockMvc.perform(get("/api/v1/profiles/by-account/{accountId}", UUID.randomUUID()))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("profile_not_found"));
 	}

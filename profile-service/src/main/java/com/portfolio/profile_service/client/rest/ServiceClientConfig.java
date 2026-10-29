@@ -1,4 +1,4 @@
-package com.portfolio.profile_service.config;
+package com.portfolio.profile_service.client.rest;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;

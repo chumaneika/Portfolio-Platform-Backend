@@ -2,6 +2,7 @@ package com.portfolio.identity_service;
 
 import com.portfolio.identity_service.dto.response.TokenResponse;
 import com.portfolio.identity_service.dto.response.AccountSummaryResponse;
+import com.portfolio.identity_service.dto.response.PublicAccountResponse;
 import com.portfolio.identity_service.entities.AccountStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,27 @@ class AccountControllerTests {
 
 	@Autowired
 	private JdbcClient jdbcClient;
+
+	@Test
+	void returnsPublicAccountWithoutSensitiveFields() {
+		var client = client();
+		var email = register(client);
+		var id = jdbcClient.sql("select id from accounts where email = :email")
+				.param("email", email)
+				.query(UUID.class)
+				.single();
+
+		var response = client.get().uri("/api/v1/accounts/{accountId}/public", id)
+				.retrieve().body(PublicAccountResponse.class);
+		assertThat(response).isNotNull();
+		assertThat(response.id()).isEqualTo(id);
+		assertThat(response.username()).isEqualTo(usernameOf(email));
+		var json = client.get().uri("/api/v1/accounts/{accountId}/public", id)
+				.retrieve().body(String.class);
+		assertThat(json).doesNotContain("email", "status", "password");
+		assertFailure(() -> client.get().uri("/api/v1/accounts/{accountId}/public", UUID.randomUUID())
+				.retrieve().toBodilessEntity(), HttpStatus.NOT_FOUND, "account_not_found");
+	}
 
 	@Test
 	void returnsCurrentAccountFromJwt() {

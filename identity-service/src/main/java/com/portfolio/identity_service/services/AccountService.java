@@ -3,6 +3,7 @@ package com.portfolio.identity_service.services;
 import com.portfolio.identity_service.dto.request.ChangePasswordRequest;
 import com.portfolio.identity_service.dto.request.ChangeUsernameRequest;
 import com.portfolio.identity_service.dto.response.AccountSummaryResponse;
+import com.portfolio.identity_service.dto.response.PublicAccountResponse;
 import com.portfolio.identity_service.entities.AccountStatus;
 import com.portfolio.identity_service.repositories.AccountRepository;
 import com.portfolio.identity_service.repositories.RefreshTokenRepository;
@@ -31,6 +32,12 @@ public class AccountService {
 	@Transactional(readOnly = true)
 	public AccountSummaryResponse getAccount(UUID accountId) {
 		return accountRepository.findAccount(accountId)
+				.orElseThrow(AccountServiceException::accountNotFound);
+	}
+
+	@Transactional(readOnly = true)
+	public PublicAccountResponse getPublicAccount(UUID accountId) {
+		return accountRepository.findPublicAccount(accountId)
 				.orElseThrow(AccountServiceException::accountNotFound);
 	}
 

@@ -29,6 +29,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/v1/portfolios/me").authenticated()
+						.requestMatchers(HttpMethod.GET, "/api/v1/portfolios/by-account/*").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/v1/portfolios/{slug}").permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))

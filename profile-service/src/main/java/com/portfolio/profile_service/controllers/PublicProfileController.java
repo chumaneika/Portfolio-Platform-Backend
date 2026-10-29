@@ -18,6 +18,12 @@ public class PublicProfileController {
 
 	private final PublicProfileService publicProfileService;
 
+	@GetMapping("/by-account/{accountId}")
+	public ResponseEntity<PublicProfileResponse> getPublicProfileByAccountId(
+			@PathVariable UUID accountId) {
+		return ResponseEntity.ok(publicProfileService.getPublicProfileByAccountId(accountId));
+	}
+
 	@GetMapping("/{profileId}")
 	public ResponseEntity<PublicProfileResponse> getPublicProfile(
 			@PathVariable UUID profileId) {

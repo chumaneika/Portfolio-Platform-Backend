@@ -1,6 +1,7 @@
 package com.portfolio.identity_service.repositories.jpa;
 
 import com.portfolio.identity_service.dto.response.AccountSummaryResponse;
+import com.portfolio.identity_service.dto.response.PublicAccountResponse;
 import com.portfolio.identity_service.entities.AccountEntity;
 import com.portfolio.identity_service.repositories.AccountRepository;
 import jakarta.persistence.EntityManager;
@@ -34,6 +35,21 @@ public class AccountJpaRepository implements AccountRepository {
                 .getResultStream()
                 .findFirst();
     }
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<PublicAccountResponse> findPublicAccount(UUID accountId) {
+		return entityManager.createQuery(
+				"""
+						select new com.portfolio.identity_service.dto.response.PublicAccountResponse(a.id, a.username)
+						from AccountEntity a
+						where a.id = :accountId and a.status = :status
+						""", PublicAccountResponse.class)
+				.setParameter("accountId", accountId)
+				.setParameter("status", com.portfolio.identity_service.entities.AccountStatus.ACTIVE)
+				.getResultStream()
+				.findFirst();
+	}
 
     @Transactional(readOnly = true)
     public Optional<AccountEntity> findById(UUID accountId) {

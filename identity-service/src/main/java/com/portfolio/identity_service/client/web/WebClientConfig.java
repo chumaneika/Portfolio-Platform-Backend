@@ -1,4 +1,4 @@
-package com.portfolio.identity_service.config;
+package com.portfolio.identity_service.client.web;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -89,6 +89,19 @@ public class PortfolioJpaRepository implements PortfolioRepository {
 	}
 
 	@Override
+	public List<PortfolioResponse> findPublishedResponsesByAccountId(UUID accountId) {
+		return entityManager.createQuery(
+				RESPONSE_PROJECTION + """
+						where portfolio.ownerAccountId = :accountId and portfolio.status = :status
+						order by portfolio.publishedAt desc, portfolio.id
+						""",
+				PortfolioResponse.class)
+				.setParameter("accountId", accountId)
+				.setParameter("status", PortfolioStatus.PUBLISHED)
+				.getResultList();
+	}
+
+	@Override
 	public List<PortfolioResponse> findAllResponsesByAccountId(UUID accountId) {
 		return entityManager.createQuery(
 				RESPONSE_PROJECTION + """

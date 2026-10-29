@@ -115,6 +115,28 @@ class PortfolioPublicationIntegrationTests {
 	}
 
 	@Test
+	void returnsOnlyPublishedPortfoliosForAccount() throws Exception {
+		var owner = UUID.randomUUID();
+		var other = UUID.randomUUID();
+		var publishedSlug = "published-" + UUID.randomUUID();
+		var publishedPath = createPortfolio(owner, publishedSlug);
+		createPortfolio(owner, "draft-" + UUID.randomUUID());
+		var otherPath = createPortfolio(other, "other-" + UUID.randomUUID());
+		mockMvc.perform(authenticated(post(publishedPath + "/publish"), owner))
+				.andExpect(status().isOk());
+		mockMvc.perform(authenticated(post(otherPath + "/publish"), other))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/portfolios/by-account/{accountId}", owner))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].slug").value(publishedSlug));
+		mockMvc.perform(get("/api/v1/portfolios/by-account/{accountId}", UUID.randomUUID()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
 	void rejectsInvalidTransitionsAndProtectsOwnerRoutes() throws Exception {
 		var owner = UUID.randomUUID();
 		var other = UUID.randomUUID();

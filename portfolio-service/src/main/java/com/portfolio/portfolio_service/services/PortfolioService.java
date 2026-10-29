@@ -123,6 +123,17 @@ public class PortfolioService {
 	public PublicPortfolioResponse getPublishedPortfolio(String slug) {
 		var portfolio = portfolioRepository.findPublishedResponseBySlug(normalizeSlug(slug))
 				.orElseThrow(PortfolioServiceException::portfolioNotFound);
+		return buildPublicPortfolio(portfolio);
+	}
+
+	@Transactional(readOnly = true)
+	public List<PublicPortfolioResponse> getPublishedPortfoliosByAccountId(UUID accountId) {
+		return portfolioRepository.findPublishedResponsesByAccountId(accountId).stream()
+				.map(this::buildPublicPortfolio)
+				.toList();
+	}
+
+	private PublicPortfolioResponse buildPublicPortfolio(PortfolioResponse portfolio) {
 		var projects = projectRepository.findAllResponsesByPortfolioId(portfolio.id()).stream()
 				.map(project -> new PublicProjectResponse(
 						project.id(),

@@ -1,4 +1,4 @@
-package com.portfolio.portfolio_service.config;
+package com.portfolio.portfolio_service.client.web;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;

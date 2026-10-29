@@ -1,6 +1,7 @@
 package com.portfolio.profile_service.services;
 
 import com.portfolio.profile_service.dto.response.PublicProfileResponse;
+import com.portfolio.profile_service.dto.response.ProfileResponse;
 import com.portfolio.profile_service.repositories.EducationRepository;
 import com.portfolio.profile_service.repositories.ProfileLinkRepository;
 import com.portfolio.profile_service.repositories.ProfileRepository;
@@ -27,7 +28,18 @@ public class PublicProfileService {
 	public PublicProfileResponse getPublicProfile(UUID profileId) {
 		var profile = profileRepository.findProfileResponseById(profileId)
 				.orElseThrow(ProfileServiceException::profileNotFound);
+		return buildPublicProfile(profile);
+	}
 
+	@Transactional(readOnly = true)
+	public PublicProfileResponse getPublicProfileByAccountId(UUID accountId) {
+		var profile = profileRepository.findProfileResponseByAccountId(accountId)
+				.orElseThrow(ProfileServiceException::profileNotFound);
+		return buildPublicProfile(profile);
+	}
+
+	private PublicProfileResponse buildPublicProfile(ProfileResponse profile) {
+		var profileId = profile.id();
 		return new PublicProfileResponse(
 				profile,
 				workExperienceRepository.findAllResponsesByProfileId(profileId),
