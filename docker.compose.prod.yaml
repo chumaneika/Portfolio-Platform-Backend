@@ -1,0 +1,24 @@
+services:
+  discovery-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  identity-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  portfolio-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  profile-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  admin-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  api-gateway-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
