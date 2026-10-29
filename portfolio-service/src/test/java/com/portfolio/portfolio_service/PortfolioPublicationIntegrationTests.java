@@ -1,6 +1,7 @@
 package com.portfolio.portfolio_service;
 
 import com.jayway.jsonpath.JsonPath;
+import com.portfolio.portfolio_service.client.ProfileClient;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.Filter;
@@ -9,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -22,8 +26,11 @@ import org.springframework.web.context.WebApplicationContext;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,6 +48,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class PortfolioPublicationIntegrationTests {
 
+	@TestConfiguration
+	static class ProfileClientTestConfig {
+		@Bean
+		@Primary
+		RecordingProfileClient recordingProfileClient() {
+			return new RecordingProfileClient();
+		}
+	}
+
+	static class RecordingProfileClient implements ProfileClient {
+		UUID lastAccountId;
+		boolean missing;
+
+		@Override
+		public Optional<Map<String, Object>> getPublicProfile(UUID accountId) {
+			lastAccountId = accountId;
+			if (missing) {
+				return Optional.empty();
+			}
+			return Optional.of(Map.of("profile", Map.of("firstName", "Test")));
+		}
+	}
+
 	@Autowired
 	private WebApplicationContext context;
 
@@ -51,10 +81,15 @@ class PortfolioPublicationIntegrationTests {
 	@Autowired
 	private SecretKey jwtSecretKey;
 
+	@Autowired
+	private RecordingProfileClient profileClient;
+
 	private MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
+		profileClient.lastAccountId = null;
+		profileClient.missing = false;
 		mockMvc = MockMvcBuilders.webAppContextSetup(context)
 				.addFilters(securityFilterChain)
 				.build();
@@ -89,8 +124,10 @@ class PortfolioPublicationIntegrationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.slug").value(slug))
 				.andExpect(jsonPath("$.publishedAt").exists())
+				.andExpect(jsonPath("$.profile.profile.firstName").value("Test"))
 				.andExpect(jsonPath("$.projects[0].id").value(projectId))
 				.andExpect(jsonPath("$.projects[0].technologies[0].technologyCode").value("java"));
+		assertThat(profileClient.lastAccountId).isEqualTo(owner);
 
 		mockMvc.perform(authenticated(post(privatePath + "/draft"), owner))
 				.andExpect(status().isOk())
@@ -134,6 +171,10 @@ class PortfolioPublicationIntegrationTests {
 		mockMvc.perform(get("/api/v1/portfolios/by-account/{accountId}", UUID.randomUUID()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(0));
+		profileClient.missing = true;
+		mockMvc.perform(get("/api/v1/portfolios/by-account/{accountId}", owner))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].profile").doesNotExist());
 	}
 
 	@Test

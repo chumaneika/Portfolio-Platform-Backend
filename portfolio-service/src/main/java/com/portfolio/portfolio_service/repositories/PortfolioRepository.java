@@ -19,6 +19,8 @@ public interface PortfolioRepository {
 
 	Optional<PortfolioResponse> findPublishedResponseBySlug(String slug);
 
+	Optional<UUID> findOwnerAccountIdById(UUID portfolioId);
+
 	List<PortfolioResponse> findPublishedResponsesByAccountId(UUID accountId);
 
 	List<PortfolioResponse> findAllResponsesByAccountId(UUID accountId);

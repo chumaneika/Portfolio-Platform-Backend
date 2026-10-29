@@ -1,5 +1,6 @@
 package com.portfolio.portfolio_service.services;
 
+import com.portfolio.portfolio_service.client.ProfileClient;
 import com.portfolio.portfolio_service.dto.request.PortfolioRequest;
 import com.portfolio.portfolio_service.dto.response.PortfolioResponse;
 import com.portfolio.portfolio_service.dto.response.PublicPortfolioResponse;
@@ -29,6 +30,7 @@ public class PortfolioService {
 	private final PortfolioRepository portfolioRepository;
 	private final ProjectRepository projectRepository;
 	private final ProjectTechnologyRepository technologyRepository;
+	private final ProfileClient profileClient;
 
 	@Transactional
 	public PortfolioResponse createPortfolio(UUID accountId, PortfolioRequest request) {
@@ -134,6 +136,9 @@ public class PortfolioService {
 	}
 
 	private PublicPortfolioResponse buildPublicPortfolio(PortfolioResponse portfolio) {
+		var ownerAccountId = portfolioRepository.findOwnerAccountIdById(portfolio.id())
+				.orElseThrow(PortfolioServiceException::portfolioNotFound);
+		var profile = profileClient.getPublicProfile(ownerAccountId).orElse(null);
 		var projects = projectRepository.findAllResponsesByPortfolioId(portfolio.id()).stream()
 				.map(project -> new PublicProjectResponse(
 						project.id(),
@@ -156,6 +161,7 @@ public class PortfolioService {
 				portfolio.title(),
 				portfolio.description(),
 				portfolio.publishedAt(),
+				profile,
 				projects);
 	}
 

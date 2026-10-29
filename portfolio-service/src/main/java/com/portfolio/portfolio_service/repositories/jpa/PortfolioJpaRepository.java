@@ -89,6 +89,16 @@ public class PortfolioJpaRepository implements PortfolioRepository {
 	}
 
 	@Override
+	public Optional<UUID> findOwnerAccountIdById(UUID portfolioId) {
+		return entityManager.createQuery(
+				"select portfolio.ownerAccountId from Portfolio portfolio where portfolio.id = :portfolioId",
+				UUID.class)
+				.setParameter("portfolioId", portfolioId)
+				.getResultStream()
+				.findFirst();
+	}
+
+	@Override
 	public List<PortfolioResponse> findPublishedResponsesByAccountId(UUID accountId) {
 		return entityManager.createQuery(
 				RESPONSE_PROJECTION + """
