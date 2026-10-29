@@ -1,0 +1,8 @@
+{$SITE_DOMAIN} {
+    @actuator path /actuator /actuator/*
+    respond @actuator 404
+
+    reverse_proxy api-gateway-service:8080 {
+        header_up X-Client-IP {remote_host}
+    }
+}

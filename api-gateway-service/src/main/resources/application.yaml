@@ -5,10 +5,91 @@ spring:
     gateway:
       server:
         webflux:
+          routes:
+            - id: auth-register
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/v1/auth/register
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedTokens: 20
+            - id: auth-login
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/v1/auth/login
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedTokens: 6
+            - id: auth-refresh
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/v1/auth/refresh
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedTokens: 3
+            - id: public-accounts
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/v1/accounts/*/public
+                - Method=GET
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 30
+            - id: public-profiles
+              uri: lb://profile-service
+              predicates:
+                - Path=/api/v1/profiles/**
+                - Method=GET
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 30
+            - id: public-portfolios
+              uri: lb://portfolio-service
+              predicates:
+                - Path=/api/v1/portfolios/by-account/*,/api/v1/portfolios/*
+                - Method=GET
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 30
+            - id: identity-service
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/accounts/**
+            - id: profile-service
+              uri: lb://profile-service
+              predicates:
+                - Path=/api/v1/profile/**,/api/v1/profiles/**
+            - id: portfolio-service
+              uri: lb://portfolio-service
+              predicates:
+                - Path=/api/v1/portfolios/**
           discovery:
             locator:
-              enabled: true
-              lower-case-service-id: true
+              enabled: false
 
 server:
   port: 8080

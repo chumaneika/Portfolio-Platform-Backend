@@ -5,6 +5,9 @@ management:
       show-details: never
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,db
     info:
       enabled: true
   endpoints:

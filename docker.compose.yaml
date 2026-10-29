@@ -18,6 +18,18 @@ x-app-common: &app-common
     - portfolio-network
 
 services:
+  rate-limit-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - portfolio-network
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   identity-db:
     <<: *postgres-common
     environment:
@@ -159,7 +171,10 @@ services:
       dockerfile: Dockerfile
     environment:
       EUREKA_SERVER_URL: http://discovery-service:8761/eureka/
+      SPRING_DATA_REDIS_HOST: rate-limit-redis
     depends_on:
+      rate-limit-redis:
+        condition: service_healthy
       discovery-service:
         condition: service_started
       identity-service:

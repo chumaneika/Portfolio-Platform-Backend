@@ -1,24 +1,130 @@
 services:
+  edge-proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in the production environment file}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - edge-network
+    depends_on:
+      api-gateway-service:
+        condition: service_healthy
+
+  identity-db:
+    ports: !reset []
+
+  portfolio-db:
+    ports: !reset []
+
+  profile-db:
+    ports: !reset []
+
+  admin-db:
+    ports: !reset []
+
   discovery-service:
+    ports: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8761/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
 
   identity-service:
+    ports: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8081/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
 
   portfolio-service:
+    ports: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8082/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
 
   profile-service:
+    ports: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8083/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
 
   admin-service:
+    ports: !reset []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8084/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
 
   api-gateway-service:
+    ports: !reset []
+    networks:
+      - portfolio-network
+      - edge-network
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      TRUST_PROXY_CLIENT_IP: "true"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      portfolio-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      admin-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "3", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+networks:
+  edge-network:
+
+volumes:
+  caddy-data:
+  caddy-config:

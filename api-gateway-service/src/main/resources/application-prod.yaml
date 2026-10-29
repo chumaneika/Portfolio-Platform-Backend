@@ -5,11 +5,17 @@ management:
       show-details: never
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,redis
     info:
       enabled: true
     gateway:
-      enabled: true
+      enabled: false
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health,info
+
+rate-limit:
+  trust-proxy-client-ip: ${TRUST_PROXY_CLIENT_IP:false}
