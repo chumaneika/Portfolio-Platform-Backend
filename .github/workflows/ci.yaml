@@ -8,47 +8,38 @@ on:
 
 jobs:
   build-and-test:
+    name: Build and test / ${{ matrix.service }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - admin-service
+          - api-gateway-service
+          - discovery-service
+          - identity-service
+          - portfolio-service
+          - profile-service
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Java 21
+      - name: Set up Java
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: ${{ vars.CI_JAVA_VERSION || '21' }}
           cache: maven
+          cache-dependency-path: |
+            ${{ matrix.service }}/pom.xml
+            ${{ matrix.service }}/.mvn/wrapper/maven-wrapper.properties
 
-      - name: Test all services
-        run: |
-          set -e
+      - name: Test service
+        working-directory: ${{ matrix.service }}
+        run: ./mvnw --batch-mode clean verify
 
-          for service in \
-            admin-service \
-            api-gateway-service \
-            discovery-service \
-            identity-service \
-            portfolio-service \
-            profile-service
-          do
-            echo "Testing $service"
-            (cd "$service" && ./mvnw --batch-mode clean verify)
-          done
-
-      - name: Build all Docker images
-        run: |
-          set -e
-
-          for service in \
-            admin-service \
-            api-gateway-service \
-            discovery-service \
-            identity-service \
-            portfolio-service \
-            profile-service
-          do
-            echo "Building $service image"
-            docker build --tag "$service:ci" "$service"
-          done
+      - name: Build Docker image
+        env:
+          CI_IMAGE_TAG: ${{ vars.CI_IMAGE_TAG || 'ci' }}
+        run: docker build --tag "${{ matrix.service }}:$CI_IMAGE_TAG" "${{ matrix.service }}"

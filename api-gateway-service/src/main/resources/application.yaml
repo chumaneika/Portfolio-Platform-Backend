@@ -22,6 +22,4 @@ eureka:
 
 management:
   endpoints:
-    web:
-      exposure:
-        include: health,info,gateway
+    enabled-by-default: false

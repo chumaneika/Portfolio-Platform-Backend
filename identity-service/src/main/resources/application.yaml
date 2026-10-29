@@ -31,9 +31,7 @@ eureka:
 
 management:
   endpoints:
-    web:
-      exposure:
-        include: health,info
+    enabled-by-default: false
 
 security:
   jwt:

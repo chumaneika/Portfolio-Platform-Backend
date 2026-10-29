@@ -1,4 +1,18 @@
 HELP.md
+# Local environment and secrets
+.env
+.env.*
+*.env
+*.env.*
+.envrc
+!.env.example
+!.env.production.example
+!*.env.example
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-secrets.yml
+src/main/resources/application-secrets.yaml
+
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

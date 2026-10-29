@@ -1,7 +1,12 @@
 # Local environment variables and secrets
 .env
 .env.*
+*.env
+*.env.*
+.envrc
 !.env.example
+!.env.production.example
+!*.env.example
 
 # Local Spring configuration
 **/src/main/resources/application-local.yml
